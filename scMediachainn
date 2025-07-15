@@ -1,0 +1,73 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+/**
+ * @title MediaChain - Contrato para distribuição de mídia
+ * @dev Contato do desenvolvedor: ianlucas2306@gmail.com
+ */
+contract MediaChain {
+    // Estrutura para armazenar arquivos
+    struct Media {
+        string fileHash; // Hash SHA3 do arquivo
+        address owner;   // Dono do conteúdo
+        uint256 price;   // Preço em wei
+        uint256 downloads; // Contador de downloads
+    }
+
+    // Mapeamentos
+    mapping(uint256 => Media) public files;
+    mapping(address => uint256[]) private userFiles;
+    mapping(bytes32 => bool) private hashExists;
+
+    uint256 public fileCount;
+    
+    // Eventos
+    event FileUploaded(uint256 indexed fileId, address owner, string fileHash);
+    event FilePurchased(uint256 indexed fileId, address buyer, uint256 price);
+
+    // Upload de arquivo
+    function uploadFile(string calldata _fileHash, uint256 _price) external {
+        bytes32 hash = keccak256(abi.encodePacked(_fileHash));
+        require(!hashExists[hash], "Arquivo ja existe");
+        
+        files[fileCount] = Media({
+            fileHash: _fileHash,
+            owner: msg.sender,
+            price: _price,
+            downloads: 0
+        });
+        
+        userFiles[msg.sender].push(fileCount);
+        hashExists[hash] = true;
+        
+        emit FileUploaded(fileCount, msg.sender, _fileHash);
+        fileCount++;
+    }
+
+    // Compra de arquivo
+    function purchaseFile(uint256 _fileId) external payable {
+        require(_fileId < fileCount, "Arquivo inexistente");
+        require(msg.value >= files[_fileId].price, "Valor insuficiente");
+        
+        files[_fileId].downloads++;
+        payable(files[_fileId].owner).transfer(msg.value);
+        
+        emit FilePurchased(_fileId, msg.sender, msg.value);
+    }
+
+    // Consulta simplificada
+    function getFileInfo(uint256 _fileId) external view returns (
+        string memory,
+        address,
+        uint256,
+        uint256
+    ) {
+        Media storage file = files[_fileId];
+        return (
+            file.fileHash,
+            file.owner,
+            file.price,
+            file.downloads
+        );
+    }
+}
