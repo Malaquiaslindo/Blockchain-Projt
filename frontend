@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediaChain - Decentralized Media Distribution</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #6e8efb 0%, #a777e3 100%);
+        }
+        .file-dropzone {
+            border: 2px dashed #a777e3;
+            transition: all 0.3s ease;
+        }
+        .file-dropzone.active {
+            border-color: #6e8efb;
+            background-color: rgba(110, 142, 251, 0.1);
+        }
+        .media-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans antialiased">
+    <!-- Navigation -->
+    <nav class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-film text-2xl"></i>
+                <span class="text-xl font-bold">MediaChain</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="connectWalletBtn" class="bg-white text-purple-600 px-4 py-2 rounded-full font-semibold hover:bg-gray-100 transition">
+                    <i class="fas fa-wallet mr-2"></i>Connect Wallet
+                </button>
+                <span id="walletAddress" class="hidden bg-purple-700 px-3 py-1 rounded-full text-sm truncate max-w-xs"></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-8">
+        <!-- Hero Section -->
+        <div class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">Monetize Your Media Securely</h1>
+            <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+                Upload, protect, and earn from your digital content with blockchain technology.
+            </p>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="bg-white rounded-xl shadow-md p-6 mb-12">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Upload Your Media</h2>
+            <div id="uploadContainer">
+                <div id="dropzone" class="file-dropzone rounded-lg p-8 text-center cursor-pointer mb-4">
+                    <i class="fas fa-cloud-upload-alt text-4xl text-purple-500 mb-3"></i>
+                    <p class="text-gray-600">Drag & drop your files here or click to browse</p>
+                    <input type="file" id="fileInput" class="hidden" accept="image/*,video/*">
+                </div>
+                <div id="filePreview" class="hidden mb-4">
+                    <div class="flex items-center bg-gray-50 p-3 rounded-lg">
+                        <i id="fileIcon" class="fas fa-file text-2xl mr-3 text-purple-500"></i>
+                        <div class="flex-grow">
+                            <p id="fileName" class="font-medium"></p>
+                            <p id="fileSize" class="text-sm text-gray-500"></p>
+                        </div>
+                        <button id="removeFileBtn" class="text-red-500 hover:text-red-700">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="priceInput" class="hidden mb-4">
+                    <label for="price" class="block text-gray-700 mb-2">Price (ETH)</label>
+                    <div class="relative">
+                        <input type="number" id="price" step="0.01" min="0.01" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500" placeholder="0.01">
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <span class="text-gray-500">ETH</span>
+                        </div>
+                    </div>
+                </div>
+                <button id="uploadBtn" class="gradient-bg text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition w-full hidden">
+                    <i class="fas fa-upload mr-2"></i> Upload to MediaChain
+                </button>
+            </div>
+            <div id="uploadProgress" class="hidden">
+                <div class="mb-2 flex justify-between">
+                    <span class="text-purple-600 font-medium">Uploading...</span>
+                    <span id="uploadPercent" class="text-purple-600">0%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                    <div id="progressBar" class="gradient-bg h-2.5 rounded-full" style="width: 0%"></div>
+                </div>
+            </div>
+            <div id="uploadSuccess" class="hidden p-4 bg-green-50 rounded-lg text-green-700 mt-4">
+                <i class="fas fa-check-circle mr-2"></i>
+                <span>Your media has been uploaded successfully!</span>
+            </div>
+        </div>
+
+        <!-- Marketplace Section -->
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-semibold text-gray-800">Media Marketplace</h2>
+                <div class="relative">
+                    <select id="filterSelect" class="appearance-none bg-gray-100 border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        <option value="all">All Media</option>
+                        <option value="image">Images</option>
+                        <option value="video">Videos</option>
+                        <option value="purchased">My Purchases</option>
+                    </select>
+                    <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                        <i class="fas fa-chevron-down text-gray-500"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="mediaGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Media items will be loaded here -->
+                <div class="text-center py-12">
+                    <i class="fas fa-spinner fa-spin text-3xl text-purple-500 mb-3"></i>
+                    <p class="text-gray-600">Loading media...</p>
+                </div>
+            </div>
+            
+            <div id="loadMoreContainer" class="text-center mt-8 hidden">
+                <button id="loadMoreBtn" class="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg font-medium hover:bg-gray-300 transition">
+                    Load More
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Purchase Modal -->
+    <div id="purchaseModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-semibold text-gray-800">Purchase Media</h3>
+                <button id="closeModalBtn" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="modalContent">
+                <div class="flex items-center mb-4">
+                    <i id="modalFileIcon" class="fas fa-file text-3xl mr-3 text-purple-500"></i>
+                    <div>
+                        <p id="modalFileName" class="font-medium"></p>
+                        <p id="modalFilePrice" class="text-purple-600 font-semibold"></p>
+                    </div>
+                </div>
+                <p class="text-gray-600 mb-4">Complete the transaction in your MetaMask wallet to access this content.</p>
+                <div id="purchaseSteps">
+                    <div class="flex items-start mb-3">
+                        <div class="flex-shrink-0 h-6 w-6 rounded-full bg-purple-100 flex items-center justify-center mr-3">
+                            <span class="text-purple-600">1</span>
+                        </div>
+                        <p class="text-gray-700">Approve the transaction in MetaMask</p>
+                    </div>
+                    <div class="flex items-start mb-3">
+                        <div class="flex-shrink-0 h-6 w-6 rounded-full bg-gray-100 flex items-center justify-center mr-3">
+                            <span class="text-gray-500">2</span>
+                        </div>
+                        <p class="text-gray-500">Confirm the purchase on blockchain</p>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 h-6 w-6 rounded-full bg-gray-100 flex items-center justify-center mr-3">
+                            <span class="text-gray-500">3</span>
+                        </div>
+                        <p class="text-gray-500">Get instant access to your media</p>
+                    </div>
+                </div>
+                <div id="purchaseProcessing" class="hidden items-center justify-center py-4">
+                    <i class="fas fa-circle-notch fa-spin text-purple-500 text-2xl mr-3"></i>
+                    <span class="text-gray-700">Processing your purchase...</span>
+                </div>
+                <div id="purchaseSuccess" class="hidden text-center py-4">
+                    <i class="fas fa-check-circle text-green-500 text-3xl mb-2"></i>
+                    <p class="text-green-600 font-medium mb-2">Purchase Successful!</p>
+                    <p class="text-gray-600 mb-4">Your media is now available for download.</p>
+                    <a id="downloadNowBtn" href="#" class="gradient-bg text-white px-6 py-2 rounded-lg font-medium inline-block">
+                        <i class="fas fa-download mr-2"></i> Download Now
+                    </a>
+                </div>
+                <div id="purchaseError" class="hidden bg-red-50 text-red-600 p-3 rounded-lg mt-4">
+                    <i class="fas fa-exclamation-circle mr-2"></i>
+                    <span id="errorMessage"></span>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button id="cancelPurchaseBtn" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button id="confirmPurchaseBtn" class="gradient-bg text-white px-4 py-2 rounded-lg font-medium hover:opacity-90">
+                    Confirm Purchase
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-film text-2xl"></i>
+                        <span class="text-xl font-bold">MediaChain</span>
+                    </div>
+                    <p class="text-gray-400 mt-2">Decentralized media distribution powered by blockchain</p>
+                </div>
+                <div class="flex space-x-6">
+                    <a href="#" class="text-gray-400 hover:text-white transition">
+                        <i class="fab fa-twitter text-xl"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition">
+                        <i class="fab fa-discord text-xl"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white transition">
+                        <i class="fab fa-github text-xl"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-6 pt-6 text-center text-gray-400 text-sm">
+                <p>© 2023 MediaChain. All rights reserved. | Contact: ianlucas2306@gmail.com</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // DOM Elements
+        const connectWalletBtn = document.getElementById('connectWalletBtn');
+        const walletAddress = document.getElementById('walletAddress');
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+        const filePreview = document.getElementById('filePreview');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const fileIcon = document.getElementById('fileIcon');
+        const removeFileBtn = document.getElementById('removeFileBtn');
+        const priceInput = document.getElementById('priceInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const uploadProgress = document.getElementById('uploadProgress');
+        const progressBar = document.getElementById('progressBar');
+        const uploadPercent = document.getElementById('uploadPercent');
+        const uploadSuccess = document.getElementById('uploadSuccess');
+        const mediaGrid = document.getElementById('mediaGrid');
+        const filterSelect = document.getElementById('filterSelect');
+        const loadMoreContainer = document.getElementById('loadMoreContainer');
+        const loadMoreBtn = document.getElementById('loadMoreBtn');
+        const purchaseModal = document.getElementById('purchaseModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const cancelPurchaseBtn = document.getElementById('cancelPurchaseBtn');
+        const confirmPurchaseBtn = document.getElementById('confirmPurchaseBtn');
+        const modalFileIcon = document.getElementById('modalFileIcon');
+        const modalFileName = document.getElementById('modalFileName');
+        const modalFilePrice = document.getElementById('modalFilePrice');
+        const purchaseSteps = document.getElementById('purchaseSteps');
+        const purchaseProcessing = document.getElementById('purchaseProcessing');
+        const purchaseSuccess = document.getElementById('purchaseSuccess');
+        const downloadNowBtn = document.getElementById('downloadNowBtn');
+        const purchaseError = document.getElementById('purchaseError');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // State variables
+        let currentFile = null;
+        let currentMediaId = null;
+        let currentUserWallet = null;
+        let mediaItems = [];
+        let filteredMediaItems = [];
+        let currentPage = 1;
+        const itemsPerPage = 9;
+
+        // Mock data for demonstration
+        const mockMedia = [
+            {
+                id: 1,
+                filename: "Sunset at the beach.jpg",
+                filetype: "image",
+                price_eth: 0.05,
+                owner_wallet: "0x123...abc",
+                is_paid: false,
+                thumbnail: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60"
+            },
+            {
+                id: 2,
+                filename: "Mountain adventure.mp4",
+                filetype: "video",
+                price_eth: 0.1,
+                owner_wallet: "0x456...def",
+                is_paid: false,
+                thumbnail: "https://images.unsplash.com/photo-1518173946687-a4c8892bbd9f?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60"
+            },
+            {
+                id: 3,
+                filename: "City night lights.jpg",
+                filetype: "image",
+                price_eth: 0.03,
+                owner_wallet: "0x789...ghi",
+                is_paid: true,
+                thumbnail: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60"
+            },
+            {
+                id: 4,
+                filename: "Wildlife documentary.mp4",
+                filetype: "video",
+                price_eth: 0.15,
+                owner_wallet: "0xabc...123",
+                is_paid: false,
+                thumbnail: "https://images.unsplash.com/photo-1470114716159-e389f8712fda?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60"
+            },
+            {
+                id: 5,
+                filename: "Portrait photography.jpg",
+                filetype: "image",
+                price_eth: 0.07,
+                owner_wallet: "0xdef...456",
+                is_paid: true,
+                thumbnail: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60"
+            },
+            {
+                id: 6,
+                filename: "Travel vlog episode 1.mp4",
+                filetype: "video",
+                price_eth: 0.12,
+                owner_wallet: "0xghi...789",
+                is_paid: false,
+                thumbnail: "https://images.unsplash.com/photo-1464037866556-6812c9d1c72e?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60"
+            }
+        ];
+
+        // Initialize the app
+        function init() {
+            mediaItems = [...mockMedia];
+            filteredMediaItems = [...mediaItems];
+            renderMediaGrid();
+            setupEventListeners();
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // Wallet connection
+            connectWalletBtn.addEventListener('click', connectWallet);
+            
+            // File upload
+            dropzone.addEventListener('click', () => fileInput.click());
+            dropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropzone.classList.add('active');
+            });
+            dropzone.addEventListener('dragleave', () => {
+                dropzone.classList.remove('active');
+            });
+            dropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('active');
+                if (e.dataTransfer.files.length) {
+                    handleFileSelect(e.dataTransfer.files[0]);
+                }
+            });
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length) {
+                    handleFileSelect(e.target.files[0]);
+                }
+            });
+            
+            removeFileBtn.addEventListener('click', resetFileUpload);
+            
+            uploadBtn.addEventListener('click', uploadFile);
+            
+            // Filter
+            filterSelect.addEventListener('change', filterMedia);
+            
+            // Load more
+            loadMoreBtn.addEventListener('click', loadMoreMedia);
+            
+            // Purchase modal
+            closeModalBtn.addEventListener('click', closeModal);
+            cancelPurchaseBtn.addEventListener('click', closeModal);
+            confirmPurchaseBtn.addEventListener('click', confirmPurchase);
+        }
+
+        // Connect wallet handler
+        function connectWallet() {
+            // In a real app, this would connect to MetaMask or another wallet provider
+            // For demo purposes, we'll simulate a wallet connection
+            currentUserWallet = "0x1a2b3c4d5e6f7g8h9i0j";
+            
+            connectWalletBtn.classList.add('hidden');
+            walletAddress.textContent = shortenAddress(currentUserWallet);
+            walletAddress.classList.remove('hidden');
+            
+            // Show notification
+            showNotification("Wallet connected successfully!", "success");
+        }
+
+        // Shorten wallet address for display
+        function shortenAddress(address) {
+            return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+        }
+
+        // Handle file selection
+        function handleFileSelect(file) {
+            currentFile = file;
+            
+            // Validate file type
+            const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/webm'];
+            if (!validTypes.includes(file.type)) {
+                showNotification("Please select an image (JPEG, PNG, GIF) or video (MP4, WebM) file.", "error");
+                resetFileUpload();
+                return;
+            }
+            
+            // Validate file size (max 100MB)
+            if (file.size > 100 * 1024 * 1024) {
+                showNotification("File size exceeds maximum limit of 100MB.", "error");
+                resetFileUpload();
+                return;
+            }
+            
+            // Display file info
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            
+            // Set appropriate icon
+            if (file.type.startsWith('image/')) {
+                fileIcon.className = 'fas fa-image text-2xl mr-3 text-purple-500';
+            } else if (file.type.startsWith('video/')) {
+                fileIcon.className = 'fas fa-video text-2xl mr-3 text-purple-500';
+            }
+            
+            filePreview.classList.remove('hidden');
+            priceInput.classList.remove('hidden');
+            uploadBtn.classList.remove('hidden');
+        }
+
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Reset file upload
+        function resetFileUpload() {
+            currentFile = null;
+            fileInput.value = '';
+            filePreview.classList.add('hidden');
+            priceInput.classList.add('hidden');
+            uploadBtn.classList.add('hidden');
+            uploadProgress.classList.add('hidden');
+            uploadSuccess.classList.add('hidden');
+        }
+
+        // Upload file handler
+        function uploadFile() {
+            if (!currentFile || !currentUserWallet) {
+                showNotification("Please select a file and connect your wallet.", "error");
+                return;
+            }
+            
+            const price = parseFloat(document.getElementById('price').value);
+            if (isNaN(price) || price <= 0) {
+                showNotification("Please enter a valid price (greater than 0 ETH).", "error");
+                return;
+            }
+            
+            // Show upload progress
+            uploadBtn.classList.add('hidden');
+            uploadProgress.classList.remove('hidden');
+            
+            // Simulate upload progress (in a real app, this would be actual upload progress)
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 5;
+                progressBar.style.width = `${progress}%`;
+                uploadPercent.textContent = `${progress}%`;
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        uploadProgress.classList.add('hidden');
+                        uploadSuccess.classList.remove('hidden');
+                        
+                        // Add the new media to the grid (simulating API response)
+                        const newMedia = {
+                            id: mediaItems.length + 1,
+                            filename: currentFile.name,
+                            filetype: currentFile.type.startsWith('image/') ? 'image' : 'video',
+                            price_eth: price,
+                            owner_wallet: currentUserWallet,
+                            is_paid: false,
+                            thumbnail: currentFile.type.startsWith('image/') ? 
+                                URL.createObjectURL(currentFile) : 
+                                "https://images.unsplash.com/photo-1574717024453-354f3984fe83?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60"
+                        };
+                        
+                        mediaItems.unshift(newMedia);
+                        filterMedia();
+                        resetFileUpload();
+                        
+                        // Reset after 5 seconds
+                        setTimeout(() => {
+                            uploadSuccess.classList.add('hidden');
+                        }, 5000);
+                    }, 500);
+                }
+            }, 100);
+        }
+
+        // Filter media based on selected filter
+        function filterMedia() {
+            const filter = filterSelect.value;
+            
+            switch(filter) {
+                case 'all':
+                    filteredMediaItems = [...mediaItems];
+                    break;
+                case 'image':
+                    filteredMediaItems = mediaItems.filter(item => item.filetype === 'image');
+                    break;
+                case 'video':
+                    filteredMediaItems = mediaItems.filter(item => item.filetype === 'video');
+                    break;
+                case 'purchased':
+                    // In a real app, this would filter by purchases made by the current user
+                    filteredMediaItems = mediaItems.filter(item => item.is_paid);
+                    break;
+            }
+            
+            currentPage = 1;
+            renderMediaGrid();
+        }
+
+        // Render media grid
+        function renderMediaGrid() {
+            if (filteredMediaItems.length === 0) {
+                mediaGrid.innerHTML = `
+                    <div class="col-span-full text-center py-12">
+                        <i class="fas fa-images text-3xl text-gray-400 mb-3"></i>
+                        <p class="text-gray-500">No media found matching your criteria.</p>
+                    </div>
+                `;
+                loadMoreContainer.classList.add('hidden');
+                return;
+            }
+            
+            // Calculate items to show
+            const itemsToShow = Math.min(currentPage * itemsPerPage, filteredMediaItems.length);
+            const items = filteredMediaItems.slice(0, itemsToShow);
+            
+            mediaGrid.innerHTML = items.map(item => createMediaCard(item)).join('');
+            
+            // Show/hide load more button
+            if (itemsToShow < filteredMediaItems.length) {
+                loadMoreContainer.classList.remove('hidden');
+            } else {
+                loadMoreContainer.classList.add('hidden');
+            }
+        }
+
+        // Create media card HTML
+        function createMediaCard(item) {
+            return `
+                <div class="media-card bg-white rounded-lg overflow-hidden shadow-md transition duration-300">
+                    <div class="relative pb-[56.25%] bg-gray-200">
+                        <img src="${item.thumbnail}" alt="${item.filename}" class="absolute h-full w-full object-cover">
+                        ${item.filetype === 'video' ? `
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div class="bg-black bg-opacity-50 rounded-full p-3">
+                                    <i class="fas fa-play text-white text-xl"></i>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-medium text-gray-800 truncate">${item.filename}</h3>
+                        <div class="flex justify-between items-center mt-3">
+                            <span class="text-purple-600 font-semibold">${item.price_eth} ETH</span>
+                            <button class="view-btn px-3 py-1 bg-purple-100 text-purple-600 rounded-full text-sm hover:bg-purple-200 transition"
+                                data-id="${item.id}" data-filename="${item.filename}" data-filetype="${item.filetype}" data-price="${item.price_eth}">
+                                ${item.is_paid ? 'Download' : 'Purchase'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Load more media
+        function loadMoreMedia() {
+            currentPage++;
+            renderMediaGrid();
+            
+            // Scroll to bottom of the grid
+            setTimeout(() => {
+                mediaGrid.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            }, 100);
+        }
+
+        // Show purchase modal
+        function openPurchaseModal(item) {
+            currentMediaId = item.id;
+            
+            // Set modal content
+            modalFileName.textContent = item.filename;
+            modalFilePrice.textContent = `${item.price_eth} ETH`;
+            
+            if (item.filetype === 'image') {
+                modalFileIcon.className = 'fas fa-image text-3xl mr-3 text-purple-500';
+            } else {
+                modalFileIcon.className = 'fas fa-video text-3xl mr-3 text-purple-500';
+            }
+            
+            // Reset modal state
+            purchaseSteps.classList.remove('hidden');
+            purchaseProcessing.classList.add('hidden');
+            purchaseSuccess.classList.add('hidden');
+            purchaseError.classList.add('hidden');
+            
+            // Show modal
+            purchaseModal.classList.remove('hidden');
+        }
+
+        // Close modal
+        function closeModal() {
+            purchaseModal.classList.add('hidden');
+        }
+
+        // Confirm purchase handler
+        function confirmPurchase() {
+            if (!currentUserWallet) {
+                showError("Please connect your wallet to make a purchase.");
+                return;
+            }
+            
+            // Show processing state
+            purchaseSteps.classList.add('hidden');
+            purchaseProcessing.classList.remove('hidden');
+            
+            // Simulate blockchain transaction (in a real app, this would interact with MetaMask)
+            setTimeout(() => {
+                // Simulate success 80% of the time
+                if (Math.random() < 0.8) {
+                    purchaseProcessing.classList.add('hidden');
+                    purchaseSuccess.classList.remove('hidden');
+                    
+                    // Update the media item to show as purchased
+                    const itemIndex = mediaItems.findIndex(item => item.id === currentMediaId);
+                    if (itemIndex !== -1) {
+                        mediaItems[itemIndex].is_paid = true;
+                        filterMedia();
+                    }
+                    
+                    // Set download link
+                    downloadNowBtn.href = "#"; // In a real app, this would be the actual download URL
+                } else {
+                    // Simulate error
+                    showError("Transaction failed. Please try again or check your wallet balance.");
+                }
+            }, 2000);
+        }
+
+        // Show error in modal
+        function showError(message) {
+            errorMessage.textContent = message;
+            purchaseError.classList.remove('hidden');
+            purchaseProcessing.classList.add('hidden');
+        }
+
+        // Show notification
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white font-medium z-50 ${
+                type === 'error' ? 'bg-red-500' : 'bg-green-500'
+            }`;
+            notification.innerHTML = `
+                <i class="fas ${type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'} mr-2"></i>
+                ${message}
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.add('opacity-0', 'transition-opacity', 'duration-300');
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Event delegation for media cards
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('view-btn') || e.target.closest('.view-btn')) {
+                const btn = e.target.classList.contains('view-btn') ? e.target : e.target.closest('.view-btn');
+                const id = parseInt(btn.dataset.id);
+                const filename = btn.dataset.filename;
+                const filetype = btn.dataset.filetype;
+                const price = parseFloat(btn.dataset.price);
+                
+                const item = {
+                    id,
+                    filename,
+                    filetype,
+                    price_eth: price
+                };
+                
+                openPurchaseModal(item);
+            }
+        });
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+<p style="border-radius: 8px; text-align: center; font-size: 12px; color: #fff; margin-top: 16px;position: fixed; left: 8px; bottom: 8px; z-index: 10; background: rgba(0, 0, 0, 0.8); padding: 4px 8px;">Made with <img src="https://enzostvs-deepsite.hf.space/logo.svg" alt="DeepSite Logo" style="width: 16px; height: 16px; vertical-align: middle;display:inline-block;margin-right:3px;filter:brightness(0) invert(1);"><a href="https://enzostvs-deepsite.hf.space" style="color: #fff;text-decoration: underline;" target="_blank" >DeepSite</a> - 🧬 <a href="https://enzostvs-deepsite.hf.space?remix=Ianlucas2306/projeto-transversal" style="color: #fff;text-decoration: underline;" target="_blank" >Remix</a></p></body>
+</html>
