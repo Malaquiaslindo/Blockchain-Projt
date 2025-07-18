@@ -2,33 +2,46 @@
 pragma solidity ^0.8.0;
 
 /**
- * @title MediaChain - Contrato para distribuição de mídia
- * @dev Contato do desenvolvedor: ianlucas2306@gmail.com
+ * @title MediaChain - Media Distribution Contract
+ * @dev:ianlucas2306@gmail.com Connects with frontend and off-chain database
  */
 contract MediaChain {
-    // Estrutura para armazenar arquivos
+    // File structure
     struct Media {
-        string fileHash; // Hash SHA3 do arquivo
-        address owner;   // Dono do conteúdo
-        uint256 price;   // Preço em wei
-        uint256 downloads; // Contador de downloads
+        string fileHash; // SHA3 hash of the file
+        address owner;   // Content owner
+        uint256 price;   // Price in wei
+        uint256 downloads; // Download count
     }
 
-    // Mapeamentos
+    // Mappings
     mapping(uint256 => Media) public files;
     mapping(address => uint256[]) private userFiles;
     mapping(bytes32 => bool) private hashExists;
 
     uint256 public fileCount;
     
-    // Eventos
-    event FileUploaded(uint256 indexed fileId, address owner, string fileHash);
-    event FilePurchased(uint256 indexed fileId, address buyer, uint256 price);
+    // Events for database synchronization
+    event FileUploaded(
+        uint256 indexed fileId,
+        address indexed owner,
+        string fileHash,
+        uint256 price,
+        uint256 timestamp
+    );
+    
+    event FilePurchased(
+        uint256 indexed fileId,
+        address indexed buyer,
+        address indexed owner,
+        uint256 price,
+        uint256 timestamp
+    );
 
-    // Upload de arquivo
+    // Upload file with metadata
     function uploadFile(string calldata _fileHash, uint256 _price) external {
         bytes32 hash = keccak256(abi.encodePacked(_fileHash));
-        require(!hashExists[hash], "Arquivo ja existe");
+        require(!hashExists[hash], "File already exists");
         
         files[fileCount] = Media({
             fileHash: _fileHash,
@@ -40,28 +53,42 @@ contract MediaChain {
         userFiles[msg.sender].push(fileCount);
         hashExists[hash] = true;
         
-        emit FileUploaded(fileCount, msg.sender, _fileHash);
+        emit FileUploaded(
+            fileCount,
+            msg.sender,
+            _fileHash,
+            _price,
+            block.timestamp
+        );
+        
         fileCount++;
     }
 
-    // Compra de arquivo
+    // Purchase file with payment
     function purchaseFile(uint256 _fileId) external payable {
-        require(_fileId < fileCount, "Arquivo inexistente");
-        require(msg.value >= files[_fileId].price, "Valor insuficiente");
+        require(_fileId < fileCount, "Invalid file ID");
+        require(msg.value >= files[_fileId].price, "Insufficient payment");
         
         files[_fileId].downloads++;
         payable(files[_fileId].owner).transfer(msg.value);
         
-        emit FilePurchased(_fileId, msg.sender, msg.value);
+        emit FilePurchased(
+            _fileId,
+            msg.sender,
+            files[_fileId].owner,
+            msg.value,
+            block.timestamp
+        );
     }
 
-    // Consulta simplificada
+    // Get file info
     function getFileInfo(uint256 _fileId) external view returns (
         string memory,
         address,
         uint256,
         uint256
     ) {
+        require(_fileId < fileCount, "Invalid file ID");
         Media storage file = files[_fileId];
         return (
             file.fileHash,
@@ -69,5 +96,10 @@ contract MediaChain {
             file.price,
             file.downloads
         );
+    }
+
+    // Get files owned by a user
+    function getUserFiles(address _user) external view returns (uint256[] memory) {
+        return userFiles[_user];
     }
 }
