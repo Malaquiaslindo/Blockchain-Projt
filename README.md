@@ -15,7 +15,7 @@ Decentralized media distribution system using Storage cess smart contracts.
   - [Python 3.10+](https://www.python.org/downloads/) (if using Python scripts).  
   - [MetaMask](https://metamask.io/download.html) (browser extension).
 
-git clone https://github.com/your-username/MediaChain.git
+git clone https://github.com/Malaquiaslindo/scMediaChainn.git
 cd MediaChain
 Start XAMPP and run Apache + MySQL.
 
