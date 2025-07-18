@@ -1,0 +1,28 @@
+-- Cria o banco de dados
+CREATE DATABASE IF NOT EXISTS proof_of_existence;
+USE proof_of_existence;
+
+-- Tabela de arquivos (files)
+CREATE TABLE IF NOT EXISTS files (
+    file_id INT AUTO_INCREMENT PRIMARY KEY,
+    filename VARCHAR(255) NOT NULL,
+    filepath VARCHAR(512) NOT NULL,
+    filetype VARCHAR(50) NOT NULL,
+    filesize INT NOT NULL,
+    hash_keccak256 VARCHAR(64) NOT NULL UNIQUE,
+    owner_wallet VARCHAR(42) NOT NULL,
+    price_eth DECIMAL(18, 8) DEFAULT 0,
+    cess_block_hash VARCHAR(64),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabela de transações (transactions)
+CREATE TABLE IF NOT EXISTS transactions (
+    tx_id INT AUTO_INCREMENT PRIMARY KEY,
+    file_id INT NOT NULL,
+    buyer_wallet VARCHAR(42) NOT NULL,
+    amount_eth DECIMAL(18, 8) NOT NULL,
+    tx_hash VARCHAR(66) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (file_id) REFERENCES files(file_id)
+);
