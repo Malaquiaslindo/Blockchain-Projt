@@ -1,0 +1,82 @@
+from flask import Flask, render_template, request, jsonify
+import mysql.connector
+
+app = Flask(__name__)
+
+# Configuração do banco de dados
+db_config = {
+    "host": "127.0.0.1",
+    "port": 3306,
+    "user": "root",
+    "password": "",
+    "database": "proof_of_existence"
+}
+
+# Rota principal (upload)
+@app.route('/')
+def index():
+    return render_template('upload.html')
+
+# Rota para registrar arquivo
+@app.route('/upload', methods=['POST'])
+def upload():
+    try:
+        # Dados do formulário
+        data = request.form
+        filename = data['filename']
+        filepath = data['filepath']
+        filetype = data['filetype']
+        filesize = int(data['filesize'])
+        hash_keccak256 = data['hash_keccak256']
+        owner_wallet = data['owner_wallet']
+        price_eth = float(data.get('price_eth', 0))
+        cess_block_hash = data.get('cess_block_hash')
+
+        # Conexão com o banco
+        conexao = mysql.connector.connect(**db_config)
+        cursor = conexao.cursor()
+
+        # Insere na tabela 'files'
+        sql_files = """
+            INSERT INTO files (
+                filename, filepath, filetype, filesize, hash_keccak256, 
+                owner_wallet, price_eth, cess_block_hash
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        valores_files = (
+            filename, filepath, filetype, filesize,
+            hash_keccak256, owner_wallet, price_eth,
+            cess_block_hash if cess_block_hash else None
+        )
+        cursor.execute(sql_files, valores_files)
+        file_id = cursor.lastrowid  # Pega o ID do arquivo inserido
+
+        # Se houver transação (ex: compra), insere na tabela 'transactions'
+        if 'tx_hash' in data:
+            sql_tx = """
+                INSERT INTO transactions (
+                    file_id, buyer_wallet, amount_eth, tx_hash
+                ) VALUES (%s, %s, %s, %s)
+            """
+            valores_tx = (
+                file_id, 
+                data['buyer_wallet'], 
+                price_eth, 
+                data['tx_hash']
+            )
+            cursor.execute(sql_tx, valores_tx)
+
+        conexao.commit()
+        return jsonify({"success": True, "message": "Arquivo e transação registrados!"})
+
+    except Exception as e:
+        print("Erro:", e)
+        return jsonify({"success": False, "message": str(e)}), 500
+
+    finally:
+        if 'conexao' in locals() and conexao.is_connected():
+            cursor.close()
+            conexao.close()
+
+if __name__ == '__main__':
+    app.run(debug=True)
